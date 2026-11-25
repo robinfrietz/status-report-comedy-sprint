@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const LINE =
@@ -12,4 +12,16 @@ const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 mkdirSync(outDir, { recursive: true });
 const target = join(outDir, "entry.txt");
 writeFileSync(target, LINE, "utf8");
+
+// Read-back verification: the written file must be byte-identical to the
+// entry line — no trailing newline, no BOM, no re-encoding.
+const back = readFileSync(target, "utf8");
+if (back !== LINE) {
+  throw new Error(
+    `read-back mismatch: entry.txt is ${back.length} chars, expected ${LINE.length}`,
+  );
+}
+if (Buffer.byteLength(back, "utf8") !== Buffer.byteLength(LINE, "utf8")) {
+  throw new Error("read-back mismatch: entry.txt byte length differs");
+}
 console.log(`wrote ${target} (${LINE.length} chars)`);
